@@ -26,6 +26,7 @@
               {{ task.task }}
             </div>
 
+            <!-- Иконки редактирования и удаления -->
             <div v-if="!editingTaskId" class="task-icons">
               <img :src="editIcon" alt="Edit" class="icon" @click="startEditing(task)" />
               <img :src="deleteIcon" alt="Delete" class="icon" @click="deleteTask(task._id)" />
@@ -33,7 +34,8 @@
           </div>
 
           <!-- Иконка добавления задачи в пустые ячейки -->
-          <div v-if="hoveredCell && hoveredCell.person === person && hoveredCell.day === day && !getTasksForDay(person, day).length" class="task-icons">
+          <div v-if="hoveredCell && hoveredCell.person === person && hoveredCell.day === day"
+               class="task-icons add-icon">
             <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person, day)" />
           </div>
         </div>
