@@ -16,7 +16,7 @@
               v-for="task in getTasksForDay(person, day)"
               :key="task._id"
               :task="task"
-              :editingTaskId="editingTaskId"
+              @editingTaskId="editingTaskId"
               @updateTask="updateTask"
               @deleteTask="deleteTask"
           />
@@ -25,20 +25,20 @@
                class="task-icons add-icon">
             <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person, day)" />
           </div>
+
+          <!-- Инпут для добавления задачи -->
+          <div v-if="taskToEdit && taskToEdit.person === person && taskToEdit.day === day"
+               class="add-task-input-container">
+            <input type="text" v-model="newTaskName" @keyup.enter="handleAddTask" placeholder="Add new task" />
+          </div>
         </div>
       </div>
     </div>
-
-    <AddTaskDialog v-if="showAddTaskDialog" :person="taskToEdit.person" :day="taskToEdit.day"
-                   @confirmAddTask="confirmAddTask" @closeDialog="closeAddTaskDialog" />
   </div>
 </template>
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import addIcon from '../../../../public/assets/addIcon.png';
-import editIcon from '../../../../public/assets/editIcon.png';
-import deleteIcon from '../../../../public/assets/deleteIcon.png';
-import AddTaskDialog from "../../../6entities/ui/AddTaskDialog/AddTaskDialog.vue";
 import TaskItem from "./TaskItem.vue";
 
 import {
@@ -46,23 +46,29 @@ import {
   dynamicPeople,
   hoveredCell,
   taskToEdit,
-  showAddTaskDialog,
-  editingTaskId,
   getTasksForDay,
   showAddInput,
   confirmAddTask,
   updateTask,
   deleteTask,
-  closeAddTaskDialog,
-  fetchTasks
+  fetchTasks, editingTaskId
 } from '../api/useTasks.ts';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const newTaskName = ref('');
 
 onMounted(() => {
   fetchTasks();
 });
+
+const handleAddTask = () => {
+  if (taskToEdit.value) {
+    confirmAddTask(newTaskName.value);
+    newTaskName.value = '';
+  }
+};
 </script>
+
 
 
 <style scoped>
@@ -235,5 +241,24 @@ button:hover {
 
 .edit-input::placeholder {
   color: #a0aec0;
+}
+.add-task-input-container {
+  margin-top: 10px;
+}
+
+.add-task-input-container input {
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 1rem;
+  width: calc(100% - 20px); /* Учитываем padding */
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.add-task-input-container input:focus {
+  border-color: #3182ce;
+  outline: none;
+  box-shadow: 0 0 5px rgba(49, 130, 206, 0.5);
 }
 </style>
