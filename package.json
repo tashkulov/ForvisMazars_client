@@ -9,8 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^6.6.0",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
     "axios": "^1.7.5",
     "interactjs": "^1.10.27",
+    "oh-vue-icons": "^1.0.0-rc3",
     "sass": "^1.77.8",
     "vue": "^3.4.37",
     "vue-router": "^4.4.3",
