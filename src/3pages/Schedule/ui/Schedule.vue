@@ -63,8 +63,10 @@ onMounted(() => {
 
 const handleAddTask = () => {
   if (taskToEdit.value) {
-    confirmAddTask(newTaskName.value);
-    newTaskName.value = '';
+    confirmAddTask(newTaskName.value).then(() => {
+      newTaskName.value = ''; // Очистить инпут после добавления задачи
+      taskToEdit.value = null; // Сбросить состояние редактирования
+    });
   }
 };
 </script>
