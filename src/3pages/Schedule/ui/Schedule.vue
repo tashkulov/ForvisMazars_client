@@ -12,28 +12,15 @@
         <div v-for="day in daysOfWeek" :key="day" class="schedule-cell"
              @mouseover="hoveredCell = { person, day }"
              @mouseleave="hoveredCell = null">
-          <div v-for="task in getTasksForDay(person, day)" :key="task._id" class="task-container">
-            <div v-if="editingTaskId === task._id">
-              <input
-                  v-model="editTaskName"
-                  @blur="updateTask(task._id)"
-                  @keydown.enter="updateTask(task._id)"
-                  class="edit-input"
-                  placeholder="Edit task..."
-              />
-            </div>
-            <div v-else class="task-block" @dblclick="startEditing(task)">
-              {{ task.task }}
-            </div>
-
-            <!-- Иконки редактирования и удаления -->
-            <div v-if="!editingTaskId" class="task-icons">
-              <img :src="editIcon" alt="Edit" class="icon" @click="startEditing(task)" />
-              <img :src="deleteIcon" alt="Delete" class="icon" @click="deleteTask(task._id)" />
-            </div>
-          </div>
-
-          <!-- Иконка добавления задачи в пустые ячейки -->
+          <TaskItem
+              v-for="task in getTasksForDay(person, day)"
+              :key="task._id"
+              :task="task"
+              :editingTaskId="editingTaskId"
+              @updateTask="updateTask"
+              @deleteTask="deleteTask"
+          />
+          <!-- Иконки добавления задачи -->
           <div v-if="hoveredCell && hoveredCell.person === person && hoveredCell.day === day"
                class="task-icons add-icon">
             <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person, day)" />
@@ -46,124 +33,36 @@
                    @confirmAddTask="confirmAddTask" @closeDialog="closeAddTaskDialog" />
   </div>
 </template>
-
-
-
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import addIcon from '../../../../public/assets/addIcon.png';
-import editIcon from '../../../../public/assets/editIcon.png'; // Иконка редактирования
-import deleteIcon from '../../../../public/assets/deleteIcon.png'; // Иконка удаления
-import axios from 'axios';
+import editIcon from '../../../../public/assets/editIcon.png';
+import deleteIcon from '../../../../public/assets/deleteIcon.png';
 import AddTaskDialog from "../../../6entities/ui/AddTaskDialog/AddTaskDialog.vue";
+import TaskItem from "./TaskItem.vue";
+
+import {
+  tasks,
+  dynamicPeople,
+  hoveredCell,
+  taskToEdit,
+  showAddTaskDialog,
+  editingTaskId,
+  getTasksForDay,
+  showAddInput,
+  confirmAddTask,
+  updateTask,
+  deleteTask,
+  closeAddTaskDialog,
+  fetchTasks
+} from '../api/useTasks.ts';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const tasks = ref([]);
-const dynamicPeople = ref([]);
-const hoveredCell = ref<{ person: string, day: string } | null>(null);
-const taskToEdit = ref<{ person: string, day: string } | null>(null);
-const showAddTaskDialog = ref(false);
-const editingTaskId = ref<string | null>(null);
-const editTaskName = ref('');
-
-// Получение задач на определённый день
-const getTasksForDay = (person: string, day: string) => {
-  return tasks.value.filter((t) => t.person === person && t.daysOfWeek.includes(day));
-};
-
-// Показать инпут для добавления задачи
-const showAddInput = (person: string, day: string) => {
-  taskToEdit.value = { person, day };
-  showAddTaskDialog.value = true;
-};
-
-// Подтверждение добавления задачи
-const confirmAddTask = async (taskName: string) => {
-  if (!taskName.trim()) return;
-
-  try {
-    const newTask = {
-      person: taskToEdit.value?.person,
-      daysOfWeek: [taskToEdit.value?.day],
-      task: taskName
-    };
-
-    const response = await axios.post('http://localhost:3000/api/schedule', newTask);
-    const createdTask = response.data;
-
-    tasks.value.push(createdTask);
-    dynamicPeople.value = [...new Set(tasks.value.map(task => task.person))];
-
-    showAddTaskDialog.value = false;
-  } catch (error) {
-    console.error('Error adding task:', error);
-  }
-};
-
-// Функция для начала редактирования задачи
-const startEditing = (task: any) => {
-  editingTaskId.value = task._id;
-  editTaskName.value = task.task;
-};
-
-// Обновление задачи после редактирования
-const updateTask = async (taskId: string) => {
-  if (!editTaskName.value.trim()) return;
-
-  try {
-    const updatedTask = {
-      ...tasks.value.find(task => task._id === taskId),
-      task: editTaskName.value,
-    };
-
-    const response = await axios.put(`http://localhost:3000/api/schedule/${taskId}`, updatedTask);
-    const updatedTaskFromServer = response.data;
-
-    // Обновляем задачу в локальном списке
-    const taskIndex = tasks.value.findIndex((task) => task._id === taskId);
-    if (taskIndex !== -1) {
-      tasks.value[taskIndex] = updatedTaskFromServer;
-    }
-
-    editingTaskId.value = null;
-    editTaskName.value = '';
-  } catch (error) {
-    console.error('Error updating task:', error);
-  }
-};
-
-// Удаление задачи
-const deleteTask = async (taskId: string) => {
-  try {
-    await axios.delete(`http://localhost:3000/api/schedule/${taskId}`);
-    tasks.value = tasks.value.filter((task) => task._id !== taskId);
-  } catch (error) {
-    console.error('Error deleting task:', error);
-  }
-};
-
-// Закрытие диалога добавления задачи
-const closeAddTaskDialog = () => {
-  showAddTaskDialog.value = false;
-};
-
-onMounted(async () => {
-  try {
-    const response = await axios.get('http://localhost:3000/api/schedule');
-    tasks.value = response.data;
-    dynamicPeople.value = [...new Set(tasks.value.map(task => task.person))];
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-  }
+onMounted(() => {
+  fetchTasks();
 });
 </script>
-
-
-
-
-
 
 
 <style scoped>
