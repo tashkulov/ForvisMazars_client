@@ -35,8 +35,8 @@
               @deleteTask="deleteTask"
           />
           <div v-if="hoveredCell && hoveredCell.person === person.name && hoveredCell.day === day"
-               class="task-icons add-icon">
-            <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person.name, day)" />
+               class="task-icons">
+            <img :src="addIcon" alt="Add" class="icon add-icon" @click="showAddInput(person.name, day)" />
           </div>
 
           <div v-if="taskToEdit && taskToEdit.person === person.name && taskToEdit.day === day"
@@ -67,7 +67,7 @@ import {
   editingTaskId,
   addUser as apiAddUser,
   updateUser as apiUpdateUser,
-  deleteUser as apiDeleteUser,
+  deleteUser as apiDeleteUser, fetchUsers,
 } from '../api/useTasks.ts';
 import TaskItem from "../../../5features/TaskItem/ui/TaskItem.vue";
 import UserItem from '../../../5features/UserItem/ui/UserItem.vue';
@@ -76,17 +76,18 @@ const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const newTaskName = ref('');
 const newUserName = ref('');
 const showAddUserInput = ref(false);
-const editingUserId = ref<string | null>(null); // Добавьте это
+const editingUserId = ref<string | null>(null);
 
 onMounted(() => {
   fetchTasks();
+  fetchUsers();
 });
 
 const handleAddTask = () => {
   if (taskToEdit.value && newTaskName.value.trim()) {
     confirmAddTask(newTaskName.value).then(() => {
       newTaskName.value = '';
-      taskToEdit.value = null; // Сбросить состояние редактирования
+      taskToEdit.value = null;
     }).catch(error => {
       console.error('Error adding task:', error);
     });
@@ -95,7 +96,7 @@ const handleAddTask = () => {
 
 const addUserHandler = () => {
   if (newUserName.value.trim()) {
-    apiAddUser(newUserName.value.trim()).then(() => {
+    apiAddUser(newUserName.value).then(() => {
       newUserName.value = '';
       showAddUserInput.value = false;
     }).catch(error => {
@@ -103,6 +104,7 @@ const addUserHandler = () => {
     });
   }
 };
+
 const updateUserHandler = async (userId: string, newName: string) => {
   try {
     await apiUpdateUser(userId, newName);
@@ -110,7 +112,6 @@ const updateUserHandler = async (userId: string, newName: string) => {
     console.error('Error updating user:', error);
   }
 };
-
 
 const deleteUserHandler = async (userId: string) => {
   try {
@@ -120,7 +121,6 @@ const deleteUserHandler = async (userId: string) => {
   }
 };
 </script>
-
 
 <style scoped>
 .schedule-container {
@@ -164,17 +164,6 @@ const deleteUserHandler = async (userId: string) => {
   display: contents;
 }
 
-.person-cell {
-  background-color: #ffffff;
-  text-align: center;
-  vertical-align: middle;
-  padding: 15px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-weight: 600;
-  color: #2d3748;
-}
-
 .schedule-cell {
   padding: 20px;
   background-color: #ffffff;
@@ -190,6 +179,7 @@ const deleteUserHandler = async (userId: string) => {
   background-color: #f1f5f9;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
 .add-user-button {
   background-color: #3182ce;
   color: white;
@@ -218,11 +208,6 @@ const deleteUserHandler = async (userId: string) => {
   margin-right: 8px;
   width: 20px;
   height: 20px;
-}
-
-.schedule-cell:hover  {
-  background-color: #2b6cb0;
-  transform: scale(1.03);
 }
 
 .task-icons {
@@ -285,7 +270,7 @@ const deleteUserHandler = async (userId: string) => {
   margin-top: 10px;
 }
 
-.add-task-input-container  input {
+.add-task-input-container input {
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   padding: 10px;
