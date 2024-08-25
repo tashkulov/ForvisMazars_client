@@ -9,6 +9,7 @@
           placeholder="Edit user name..."
       />
     </div>
+
     <div v-else class="user-block" @dblclick="startEditing">
       {{ user.name }}
     </div>
@@ -19,18 +20,20 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, watch, defineProps, defineEmits } from 'vue';
 import editIcon from '../../../../public/assets/editIcon.png';
 import deleteIcon from '../../../../public/assets/deleteIcon.png';
 
-const props = defineProps({
-  user: Object,
-  editingUserId: String
-});
+const props = defineProps<{
+  user: { _id: string, name: string };
+  editingUserId: string | null;
+}>();
 
-const emit = defineEmits(['updateUser', 'deleteUser']);
+const emit = defineEmits<{
+  (event: 'updateUser', payload: { id: string, name: string }): void;
+  (event: 'deleteUser', payload: string): void;
+}>();
 
 const editUserName = ref(props.user.name);
 const isEditing = ref(props.editingUserId === props.user._id);
@@ -48,6 +51,10 @@ const updateUser = () => {
 const deleteUser = () => {
   emit('deleteUser', props.user._id);
 };
+
+watch(() => props.editingUserId, (newId) => {
+  isEditing.value = newId === props.user._id;
+});
 </script>
 
 <style scoped>
@@ -56,10 +63,11 @@ const deleteUser = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 200px; /* Ширина для лучшего визуального восприятия */
+  margin: 10px; /* Отступ для лучшего визуального восприятия */
 }
 
 .edit-input-container {
-  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -98,6 +106,7 @@ const deleteUser = () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   flex: 1;
   transition: background-color 0.3s ease, transform 0.3s ease;
+  cursor: pointer; /* Добавьте курсор указателя для интерактивности */
 }
 
 .user-icons {

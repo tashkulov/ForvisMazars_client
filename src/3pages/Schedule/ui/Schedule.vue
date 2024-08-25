@@ -16,25 +16,30 @@
         <h3 class="day-title">{{ day }}</h3>
       </div>
 
-      <div v-for="(person, personIndex) in dynamicPeople" :key="personIndex" class="person-row">
-        <div class="person-cell"><strong>{{ person }}</strong></div>
+      <div v-for="person in dynamicPeople" :key="person._id" class="person-row">
+        <UserItem
+            :user="person"
+            :editingUserId="editingUserId"
+            @updateUser="updateUserHandler"
+            @deleteUser="deleteUserHandler"
+        />
         <div v-for="day in daysOfWeek" :key="day" class="schedule-cell"
-             @mouseover="hoveredCell = { person, day }"
+             @mouseover="hoveredCell = { person: person.name, day }"
              @mouseleave="hoveredCell = null">
           <TaskItem
-              v-for="task in getTasksForDay(person, day)"
+              v-for="task in getTasksForDay(person.name, day)"
               :key="task._id"
               :task="task"
               @editingTaskId="editingTaskId"
               @updateTask="updateTask"
               @deleteTask="deleteTask"
           />
-          <div v-if="hoveredCell && hoveredCell.person === person && hoveredCell.day === day"
+          <div v-if="hoveredCell && hoveredCell.person === person.name && hoveredCell.day === day"
                class="task-icons add-icon">
-            <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person, day)" />
+            <img :src="addIcon" alt="Add" class="icon" @click="showAddInput(person.name, day)" />
           </div>
 
-          <div v-if="taskToEdit && taskToEdit.person === person && taskToEdit.day === day"
+          <div v-if="taskToEdit && taskToEdit.person === person.name && taskToEdit.day === day"
                class="add-task-input-container">
             <input type="text" v-model="newTaskName" @keyup.enter="handleAddTask" placeholder="Add new task" />
           </div>
@@ -60,24 +65,30 @@ import {
   deleteTask,
   fetchTasks,
   editingTaskId,
-  addUser as apiAddUser
+  addUser as apiAddUser,
+  updateUser as apiUpdateUser,
+  deleteUser as apiDeleteUser,
 } from '../api/useTasks.ts';
 import TaskItem from "../../../5features/TaskItem/ui/TaskItem.vue";
+import UserItem from '../../../5features/UserItem/ui/UserItem.vue';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const newTaskName = ref('');
 const newUserName = ref('');
 const showAddUserInput = ref(false);
+const editingUserId = ref<string | null>(null); // Добавьте это
 
 onMounted(() => {
   fetchTasks();
 });
 
 const handleAddTask = () => {
-  if (taskToEdit.value) {
+  if (taskToEdit.value && newTaskName.value.trim()) {
     confirmAddTask(newTaskName.value).then(() => {
       newTaskName.value = '';
       taskToEdit.value = null; // Сбросить состояние редактирования
+    }).catch(error => {
+      console.error('Error adding task:', error);
     });
   }
 };
@@ -87,10 +98,30 @@ const addUserHandler = () => {
     apiAddUser(newUserName.value.trim()).then(() => {
       newUserName.value = '';
       showAddUserInput.value = false;
+    }).catch(error => {
+      console.error('Error adding user:', error);
     });
   }
 };
+const updateUserHandler = async (userId: string, newName: string) => {
+  try {
+    await apiUpdateUser(userId, newName);
+  } catch (error) {
+    console.error('Error updating user:', error);
+  }
+};
+
+
+const deleteUserHandler = async (userId: string) => {
+  try {
+    await apiDeleteUser(userId);
+  } catch (error) {
+    console.error('Error deleting user:', error);
+  }
+};
 </script>
+
+
 <style scoped>
 .schedule-container {
   padding: 30px;
