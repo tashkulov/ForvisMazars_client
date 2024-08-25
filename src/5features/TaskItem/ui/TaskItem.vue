@@ -13,7 +13,6 @@
       {{ task.task }}
     </div>
 
-    <!-- Иконки редактирования и удаления -->
     <div v-if="!isEditing" class="task-icons">
       <img :src="editIcon" alt="Edit" class="icon" @click="startEditing" />
       <img :src="deleteIcon" alt="Delete" class="icon" @click="deleteTask" />

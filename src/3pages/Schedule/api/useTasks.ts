@@ -39,7 +39,19 @@ const confirmAddTask = async (taskName: string) => {
         console.error('Error adding task:', error);
     }
 };
+const addUser = async (userName: string) => {
+    if (!userName.trim()) return;
 
+    try {
+        const response = await axios.post('http://localhost:3000/api/schedule', { person: userName });
+        const createdUser = response.data;
+
+        dynamicPeople.value.push(createdUser.person); // Добавляем нового пользователя в список
+        newUser.value = ''; // Очищаем поле ввода
+    } catch (error) {
+        console.error('Error adding user:', error);
+    }
+};
 const updateTask = async ({ id, name }: { id: string, name: string }) => {
     if (!name.trim()) return;
 
@@ -99,5 +111,6 @@ export {
     updateTask,
     deleteTask,
     closeAddTaskDialog,
-    fetchTasks
+    fetchTasks,
+    addUser
 };
