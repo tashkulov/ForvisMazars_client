@@ -27,13 +27,14 @@
              @mouseenter="onCellHover(person._id, person.name, day)"
              @mouseleave="onCellHover(null,null)">
           <TaskItem
-              v-for="task in getTasksForDay(person.name, day)"
+              v-for="task in getTasksForDay(person._id, day)"
               :key="task._id"
               :task="task"
-              @editingTaskId="editingTaskId"
-              @updateTask="updateTask"
-              @deleteTask="deleteTask"
+              @updateTask="updateTaskHandler"
+              @delete-task="deleteTaskHandler"
           />
+
+
           <div v-if="hoveredCell && hoveredCell.person === person.name && hoveredCell.day === day"
                class="task-icons">
             <img :src="addIcon" alt="Add" class="icon add-icon" @click="showAddInput(person.name, day)"/>
@@ -41,7 +42,7 @@
 
           <div v-if="taskToEdit && taskToEdit.person === person.name && taskToEdit.day === day"
                class="add-task-input-container">
-            <input type="text" v-model="newTaskName" @keyup.enter="handleAddTask" placeholder="Add new task" />
+            <input type="text" v-model="newTaskName" @keyup.enter="handleAddTask" placeholder="Add" />
           </div>
         </div>
       </div>
@@ -81,7 +82,9 @@ const editingUserId = ref<string | null>(null);
 onMounted(() => {
   fetchTasks();
   fetchUsers();
+  console.log('Tasks after fetch:', tasks.value); // Логируем задачи
 });
+
 
 const handleAddTask = () => {
   if (taskToEdit.value && newTaskName.value.trim()) {
@@ -121,22 +124,49 @@ const deleteUserHandler = async (userId: string) => {
     console.error('Error deleting user:', error);
   }
 };
+const updateTaskHandler = async (taskId: string, updatedTaskName: string) => {
+  try {
+    console.log('Task ID:', taskId);
+    console.log('Updated Task Name:', updatedTaskName);
+
+    await updateTask({id:taskId,updatedTaskName: updatedTaskName}); // Обновление задачи через API
+     await fetchTasks(); // Перезагрузка данных после изменения
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+};
+
+
+const deleteTaskHandler = async (taskId: string) => {
+  try {
+    await deleteTask(taskId);
+    await fetchTasks();
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+};
+
+
 </script>
+
+
+
 
 <style scoped>
 .schedule-container {
   padding: 30px;
-  background-color: #f7f9fc;
+  background: linear-gradient(135deg, #f7f9fc, #e2e8f0);
   font-family: 'Roboto', sans-serif;
   min-height: 100vh;
 }
 
 .title {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   color: #2d3748;
   font-size: 2.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .schedule-grid {
@@ -147,12 +177,18 @@ const deleteUserHandler = async (userId: string) => {
 
 .schedule-header-cell {
   padding: 15px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
-  background-color: #edf2f7;
+  background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.schedule-header-cell:hover {
+  background-color: #edf2f7;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .day-title {
@@ -167,9 +203,9 @@ const deleteUserHandler = async (userId: string) => {
 
 .schedule-cell {
   padding: 20px;
-  background-color: #ffffff;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -178,37 +214,38 @@ const deleteUserHandler = async (userId: string) => {
 
 .schedule-cell:hover {
   background-color: #f1f5f9;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .add-user-button {
-  background-color: #3182ce;
+  background: linear-gradient(135deg, #3182ce, #63b3ed);
   color: white;
   border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-size: 1rem;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .add-user-button:hover {
-  background-color: #2b6cb0;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #2b6cb0, #4a90e2);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .add-user-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.3);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.5);
 }
 
 .add-user-button .icon {
-  margin-right: 8px;
-  width: 20px;
-  height: 20px;
+  margin-right: 10px;
+  width: 24px;
+  height: 24px;
 }
 
 .task-icons {
@@ -216,7 +253,7 @@ const deleteUserHandler = async (userId: string) => {
   top: 10px;
   right: 10px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
@@ -228,55 +265,67 @@ const deleteUserHandler = async (userId: string) => {
 
 .icon {
   cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   transition: transform 0.3s ease;
 }
 
 .icon:hover {
-  transform: scale(1.1);
+  transform: scale(1.2);
+}
+
+.add-icon {
+  filter: hue-rotate(90deg);
 }
 
 .add-user-input-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .add-user-input-container input {
   border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px;
-  font-size: 1rem;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 1.1rem;
   width: 250px;
   box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.add-user-input-container input:focus {
+  border-color: #3182ce;
+  outline: none;
+  box-shadow: 0 0 8px rgba(49, 130, 206, 0.5);
 }
 
 .add-user-input-container button {
-  padding: 10px 20px;
-  font-size: 1rem;
+  padding: 12px 24px;
+  font-size: 1.1rem;
   cursor: pointer;
   border: none;
-  border-radius: 10px;
-  background-color: #3182ce;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3182ce, #63b3ed);
   color: white;
-  transition: background-color 0.3s ease;
+  transition: background 0.3s ease;
 }
 
 .add-user-input-container button:hover {
-  background-color: #2b6cb0;
+  background: linear-gradient(135deg, #2b6cb0, #4a90e2);
 }
 
 .add-task-input-container {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .add-task-input-container input {
   border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px;
-  font-size: 1rem;
-  width: calc(100% - 20px);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 1.1rem;
+  width: calc(100% - 24px);
   box-sizing: border-box;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -284,6 +333,54 @@ const deleteUserHandler = async (userId: string) => {
 .add-task-input-container input:focus {
   border-color: #3182ce;
   outline: none;
-  box-shadow: 0 0 5px rgba(49, 130, 206, 0.5);
+  box-shadow: 0 0 8px rgba(49, 130, 206, 0.5);
+}
+
+/* Media Queries */
+@media (max-width: 1200px) {
+  .schedule-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .schedule-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .add-user-button {
+    font-size: 0.9rem;
+    padding: 10px 18px;
+  }
+
+  .schedule-cell {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .add-user-input-container input,
+  .add-task-input-container input {
+    width: calc(100% - 16px);
+  }
+}
+
+@media (max-width: 576px) {
+  .schedule-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .add-user-input-container input,
+  .add-task-input-container input {
+    width: calc(100% - 12px);
+  }
 }
 </style>

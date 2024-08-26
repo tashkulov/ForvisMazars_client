@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import axios from 'axios';
 import {Logger} from "sass";
 
-const tasks = ref<any[]>([]);
+const tasks = ref<hoveredCell[]>([]);
 const dynamicPeople = ref<{ _id: string, name: string }[]>([]);
 const hoveredCell = ref<{ _id: string, person: string, day: string } | null>(null);
 const taskToEdit = ref<{ person: string, day: string } | null>(null);
@@ -22,7 +22,6 @@ const updateDynamicPeople = () => {
     ];
 };
 const onCellHover = (personId: string, personName: string, day: string) => {
-    console.log('Setting hoveredCell:', { _id: personId, person: personName, day });
     hoveredCell.value = { _id: personId, person: personName, day };
 };
 
@@ -31,7 +30,6 @@ const fetchTasks = async () => {
     try {
         const response = await axios.get(`${apiBaseUrl}/tasks`);
         tasks.value = response.data;
-        console.log('Fetched tasks:', tasks.value); // Проверьте вывод в консоли
         updateDynamicPeople();
     } catch (error) {
         console.error('Error fetching tasks:', error);
@@ -64,22 +62,16 @@ const showAddInput = (personId: string, day: string) => {
 };
 const confirmAddTask = async (taskName: string) => {
     if (!taskName.trim()) return;
-
     const personId = hoveredCell.value?._id
-
     if (!personId) {
         console.error('Person ID is not set.');
         return;
     }
-
     const newTask = {
         person: personId,  // Используем только ID пользователя
         daysOfWeek: [taskToEdit.value?.day],
         task: taskName
-    };
-
-    console.log('New task data:', newTask); // Логируем данные для отладки
-
+    }
     try {
         const response = await axios.post(`${apiBaseUrl}/tasks`, newTask);
         tasks.value.push(response.data);
@@ -103,13 +95,16 @@ const addUser = async (userName: string) => {
         console.error('Error adding user:', error);
     }
 };
+const updateUser = async ({ id, name }: { id: string, name: string }) => {
+    if (!name.trim()) return;
 
-const updateUser = async (userId: string, newName: string) => {
-    if (!newName.trim()) return;
+    console.log('Updating user with ID:', id, 'New name:', name);
 
     try {
-        const response = await axios.put(`${apiBaseUrl}/users/${userId}`, { name: newName });
-        const userIndex = dynamicPeople.value.findIndex((person) => person._id === userId);
+        const response = await axios.put(`${apiBaseUrl}/users/${id}`, { name });
+        console.log('Update response:', response.data);
+
+        const userIndex = dynamicPeople.value.findIndex((person) => person._id === id);
 
         if (userIndex !== -1) {
             dynamicPeople.value[userIndex].name = response.data.name;
@@ -120,31 +115,44 @@ const updateUser = async (userId: string, newName: string) => {
     }
 };
 
+
+
 // Удаление пользователя
 const deleteUser = async (userId: string) => {
     try {
         await axios.delete(`${apiBaseUrl}/users/${userId}`);
+
         dynamicPeople.value = dynamicPeople.value.filter(person => person._id !== userId);
+
+        tasks.value = tasks.value.filter(task => task.person !== userId);
+
+        console.log(`User and their tasks with ID ${userId} deleted.`);
     } catch (error) {
         console.error('Error deleting user:', error);
     }
 };
-
 // Обновление информации о задаче
-const updateTask = async ({ id, name }: { id: string, name: string }) => {
-    if (!name.trim()) return;
+const updateTask = async ({ id, updatedTaskName }: { id: string, updatedTaskName: string }) => {
+    if (!updatedTaskName.trim()) return;
 
     try {
-        const response = await axios.put(`${apiBaseUrl}/tasks/${id}`, { taname });
+        const response = await axios.put(`${apiBaseUrl}/tasks/${id}`, { task: updatedTaskName });
         const taskIndex = tasks.value.findIndex((task) => task._id === id);
+
         if (taskIndex !== -1) {
             tasks.value[taskIndex] = response.data;
+            updateDynamicPeople();
         }
         editingTaskId.value = null;
     } catch (error) {
         console.error('Error updating task:', error);
     }
 };
+
+
+
+
+
 
 // Удаление задачи
 const deleteTask = async (taskId: string) => {

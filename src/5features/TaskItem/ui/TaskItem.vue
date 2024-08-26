@@ -1,103 +1,198 @@
 <template>
-  <div
-      :style="{
-      transform: `translate(${position.x}px, ${position.y}px)`,
-      width: size.width + 'px',
-      height: size.height + 'px'
-    }"
-      class="draggable task-block"
-  >
-    {{ task.name }}
-    <!-- Add icons for editing and deleting tasks -->
-    <div class="task-icons">
-      <img :src="editIcon" alt="Edit" class="icon" @click="startEditing" />
-      <img :src="deleteIcon" alt="Delete" class="icon" @click="deleteTask" />
+  <div class="task-item">
+    <div v-if="editing" class="edit-mode">
+      <input type="text" v-model="taskName" @keyup.enter="saveTask" class="task-input" />
+    </div>
+    <div v-else class="view-mode">
+      <p class="task-text">{{ task.task }}</p>
+      <div class="icons">
+        <img src="../../../../public/assets/editIcon.png" alt="Edit" @click="startEditing" class="icon edit-icon" />
+        <img src="../../../../public/assets/deleteIcon.png" alt="Delete" @click="deleteTask" class="icon delete-icon" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, defineProps, defineEmits } from 'vue';
-import interact from 'interactjs';
-import editIcon from '../../../../public/assets/editIcon.png';
-import deleteIcon from '../../../../public/assets/deleteIcon.png';
+import { ref } from 'vue';
 
-// Define props and emits
 const props = defineProps({
-  task: Object as { _id: string; name: string; position?: { x: number; y: number }; size?: { width: number; height: number } },
-  editingTaskId: String
+  task: {
+    type: Object,
+    required: true,
+  },
 });
 
-const emit = defineEmits(['updateTaskPosition', 'updateTaskSize', 'editTask', 'deleteTask']);
+const emits = defineEmits(['updateTask', 'deleteTask']);
 
-const position = ref<{ x: number; y: number }>({ x: 0, y: 0 });
-const size = ref<{ width: number; height: number }>({ width: 100, height: 50 });
+const editing = ref(false);
+const taskName = ref(props.task.name);
 
-// Watch for changes in the task prop
-watch(() => props.task, (newTask) => {
-  position.value = newTask.position || { x: 0, y: 0 };
-  size.value = newTask.size || { width: 100, height: 50 };
-}, { immediate: true });
-
-// Initialize interact.js
-onMounted(() => {
-  interact('.draggable')
-      .draggable({
-        listeners: {
-          move(event) {
-            position.value.x += event.dx;
-            position.value.y += event.dy;
-            emit('updateTaskPosition', { id: props.task._id, position: position.value });
-          }
-        }
-      })
-      .resizable({
-        edges: { left: true, right: true, bottom: true, top: true },
-        listeners: {
-          move(event) {
-            size.value.width = event.rect.width;
-            size.value.height = event.rect.height;
-            emit('updateTaskSize', { id: props.task._id, size: size.value });
-          }
-        }
-      });
-});
-
-// Methods to handle task editing and deletion
 const startEditing = () => {
-  emit('editTask', props.task._id);
+  editing.value = true;
+};
+
+const saveTask = () => {
+  if (taskName.value.trim()) {
+    emits('updateTask', props.task._id, taskName.value);
+    editing.value = false;
+  }
 };
 
 const deleteTask = () => {
-  emit('deleteTask', props.task._id);
+  emits('deleteTask', props.task._id);
 };
 </script>
-
 <style scoped>
-.task-block {
-  background-color: #3182ce;
-  color: white;
-  text-align: center;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  position: absolute;
+.task-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: move;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
+  position: relative;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.task-icons {
-  position: absolute;
-  top: 5px;
-  right: 5px;
+.task-item:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+}
+
+.edit-mode {
   display: flex;
-  gap: 5px;
+  align-items: center;
+  width: 100%;
+}
+
+.task-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.task-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+  outline: none;
+}
+
+.view-mode {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.task-text {
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+  transition: color 0.3s ease;
+}
+
+.task-text:hover {
+  color: #007bff;
+}
+
+.icons {
+  display: flex;
+  gap: 8px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }
 
 .icon {
+  cursor: pointer;
   width: 20px;
   height: 20px;
-  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.icon:hover {
+  transform: scale(1.2);
+  filter: brightness(1.2);
+}
+
+.edit-icon {
+  filter: hue-rotate(180deg);
+}
+
+.delete-icon {
+  filter: hue-rotate(0deg);
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+  .task-item {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .task-input {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .task-text {
+    font-size: 14px;
+  }
+
+  .icons {
+    gap: 6px;
+    top: 5px;
+    right: 5px;
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .icons {
+    position: static;
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .task-item {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .task-input {
+    font-size: 18px;
+    padding: 12px;
+  }
+
+  .task-text {
+    font-size: 18px;
+  }
+
+  .icons {
+    gap: 6px;
+    top: -7px;
+    left: -10px;
+  }
+
+  .icon {
+    width: 17px;
+    height: 17px;
+  }
 }
 </style>
