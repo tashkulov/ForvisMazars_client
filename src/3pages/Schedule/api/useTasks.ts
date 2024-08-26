@@ -1,9 +1,10 @@
 import { ref } from 'vue';
 import axios from 'axios';
+import {Logger} from "sass";
 
 const tasks = ref<any[]>([]);
 const dynamicPeople = ref<{ _id: string, name: string }[]>([]);
-const hoveredCell = ref<{ person: string, day: string } | null>(null);
+const hoveredCell = ref<{ _id: string, person: string, day: string } | null>(null);
 const taskToEdit = ref<{ person: string, day: string } | null>(null);
 const showAddTaskDialog = ref(false);
 const editingTaskId = ref<string | null>(null);
@@ -12,7 +13,6 @@ const users = ref<{ _id: string, name: string }[]>([]);
 
 const apiBaseUrl = 'http://localhost:3000/api';
 
-// Обновление списка динамических пользователей
 const updateDynamicPeople = () => {
     dynamicPeople.value = [
         ...new Set([
@@ -21,18 +21,23 @@ const updateDynamicPeople = () => {
         ])
     ];
 };
+const onCellHover = (personId: string, personName: string, day: string) => {
+    console.log('Setting hoveredCell:', { _id: personId, person: personName, day });
+    hoveredCell.value = { _id: personId, person: personName, day };
+};
 
 // Получение всех задач
 const fetchTasks = async () => {
     try {
         const response = await axios.get(`${apiBaseUrl}/tasks`);
         tasks.value = response.data;
-        console.log('Fetched tasks:', tasks.value);
+        console.log('Fetched tasks:', tasks.value); // Проверьте вывод в консоли
         updateDynamicPeople();
     } catch (error) {
         console.error('Error fetching tasks:', error);
     }
 };
+
 
 // Получение всех пользователей
 const fetchUsers = async () => {
@@ -45,30 +50,37 @@ const fetchUsers = async () => {
     }
 };
 
-// Получение задач для конкретного дня
+
 const getTasksForDay = (personId: string, day: string) => {
     return tasks.value.filter((t) => {
-        // Проверка существования t.person перед доступом к его свойствам
         return t.person && t.person._id === personId && t.daysOfWeek.includes(day);
     });
 };
 
-// Показать инпут для добавления новой задачи
+
 const showAddInput = (personId: string, day: string) => {
     taskToEdit.value = { person: personId, day };
     showAddTaskDialog.value = true;
 };
-
 const confirmAddTask = async (taskName: string) => {
     if (!taskName.trim()) return;
 
-    try {
-        const newTask = {
-            person: taskToEdit.value?.person,
-            daysOfWeek: [taskToEdit.value?.day],
-            task: taskName
-        };
+    const personId = hoveredCell.value?._id
 
+    if (!personId) {
+        console.error('Person ID is not set.');
+        return;
+    }
+
+    const newTask = {
+        person: personId,  // Используем только ID пользователя
+        daysOfWeek: [taskToEdit.value?.day],
+        task: taskName
+    };
+
+    console.log('New task data:', newTask); // Логируем данные для отладки
+
+    try {
         const response = await axios.post(`${apiBaseUrl}/tasks`, newTask);
         tasks.value.push(response.data);
         updateDynamicPeople();
@@ -78,7 +90,9 @@ const confirmAddTask = async (taskName: string) => {
     }
 };
 
-// Добавление нового пользователя
+
+
+
 const addUser = async (userName: string) => {
     if (!userName.trim()) return;
 
@@ -90,13 +104,13 @@ const addUser = async (userName: string) => {
     }
 };
 
-// Обновление информации о пользователе
 const updateUser = async (userId: string, newName: string) => {
     if (!newName.trim()) return;
 
     try {
         const response = await axios.put(`${apiBaseUrl}/users/${userId}`, { name: newName });
         const userIndex = dynamicPeople.value.findIndex((person) => person._id === userId);
+
         if (userIndex !== -1) {
             dynamicPeople.value[userIndex].name = response.data.name;
         }
@@ -121,7 +135,7 @@ const updateTask = async ({ id, name }: { id: string, name: string }) => {
     if (!name.trim()) return;
 
     try {
-        const response = await axios.put(`${apiBaseUrl}/tasks/${id}`, { task: name });
+        const response = await axios.put(`${apiBaseUrl}/tasks/${id}`, { taname });
         const taskIndex = tasks.value.findIndex((task) => task._id === id);
         if (taskIndex !== -1) {
             tasks.value[taskIndex] = response.data;
@@ -157,5 +171,6 @@ export {
     addUser,
     fetchUsers,
     updateUser,
-    deleteUser
+    deleteUser,
+    onCellHover
 };

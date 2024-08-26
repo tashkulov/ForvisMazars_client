@@ -24,8 +24,8 @@
             @deleteUser="deleteUserHandler"
         />
         <div v-for="day in daysOfWeek" :key="day" class="schedule-cell"
-             @mouseover="hoveredCell = { person: person.name, day }"
-             @mouseleave="hoveredCell = null">
+             @mouseenter="onCellHover(person._id, person.name, day)"
+             @mouseleave="onCellHover(null,null)">
           <TaskItem
               v-for="task in getTasksForDay(person.name, day)"
               :key="task._id"
@@ -36,7 +36,7 @@
           />
           <div v-if="hoveredCell && hoveredCell.person === person.name && hoveredCell.day === day"
                class="task-icons">
-            <img :src="addIcon" alt="Add" class="icon add-icon" @click="showAddInput(person.name, day)" />
+            <img :src="addIcon" alt="Add" class="icon add-icon" @click="showAddInput(person.name, day)"/>
           </div>
 
           <div v-if="taskToEdit && taskToEdit.person === person.name && taskToEdit.day === day"
@@ -67,7 +67,7 @@ import {
   editingTaskId,
   addUser as apiAddUser,
   updateUser as apiUpdateUser,
-  deleteUser as apiDeleteUser, fetchUsers,
+  deleteUser as apiDeleteUser, fetchUsers, onCellHover,
 } from '../api/useTasks.ts';
 import TaskItem from "../../../5features/TaskItem/ui/TaskItem.vue";
 import UserItem from '../../../5features/UserItem/ui/UserItem.vue';
@@ -85,6 +85,7 @@ onMounted(() => {
 
 const handleAddTask = () => {
   if (taskToEdit.value && newTaskName.value.trim()) {
+
     confirmAddTask(newTaskName.value).then(() => {
       newTaskName.value = '';
       taskToEdit.value = null;
