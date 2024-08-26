@@ -34,7 +34,6 @@
               @delete-task="deleteTaskHandler"
           />
 
-
           <div v-if="hoveredCell && hoveredCell.person === person.name && hoveredCell.day === day"
                class="task-icons">
             <img :src="addIcon" alt="Add" class="icon add-icon" @click="showAddInput(person.name, day)"/>
@@ -53,7 +52,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import addIcon from '../../../../public/assets/addIcon.png';
-
+import TaskItem from "../../../5features/TaskItem/ui/TaskItem.vue";
+import UserItem from '../../../5features/UserItem/ui/UserItem.vue';
 import {
   tasks,
   dynamicPeople,
@@ -65,13 +65,12 @@ import {
   updateTask,
   deleteTask,
   fetchTasks,
-  editingTaskId,
+  fetchUsers,
   addUser as apiAddUser,
   updateUser as apiUpdateUser,
-  deleteUser as apiDeleteUser, fetchUsers, onCellHover,
+  deleteUser as apiDeleteUser,
+  onCellHover,
 } from '../api/useTasks.ts';
-import TaskItem from "../../../5features/TaskItem/ui/TaskItem.vue";
-import UserItem from '../../../5features/UserItem/ui/UserItem.vue';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const newTaskName = ref('');
@@ -85,10 +84,8 @@ onMounted(() => {
   console.log('Tasks after fetch:', tasks.value); // Логируем задачи
 });
 
-
 const handleAddTask = () => {
   if (taskToEdit.value && newTaskName.value.trim()) {
-
     confirmAddTask(newTaskName.value).then(() => {
       newTaskName.value = '';
       taskToEdit.value = null;
@@ -124,18 +121,14 @@ const deleteUserHandler = async (userId: string) => {
     console.error('Error deleting user:', error);
   }
 };
+
 const updateTaskHandler = async (taskId: string, updatedTaskName: string) => {
   try {
-    console.log('Task ID:', taskId);
-    console.log('Updated Task Name:', updatedTaskName);
-
-    await updateTask({id:taskId,updatedTaskName: updatedTaskName}); // Обновление задачи через API
-     await fetchTasks(); // Перезагрузка данных после изменения
+    await updateTask({id: taskId, updatedTaskName}); // Обновление задачи через API
   } catch (error) {
     console.error('Error updating task:', error);
   }
 };
-
 
 const deleteTaskHandler = async (taskId: string) => {
   try {
@@ -145,11 +138,7 @@ const deleteTaskHandler = async (taskId: string) => {
     console.error('Error deleting task:', error);
   }
 };
-
-
 </script>
-
-
 
 
 <style scoped>

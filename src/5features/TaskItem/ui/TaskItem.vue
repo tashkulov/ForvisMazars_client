@@ -1,5 +1,5 @@
 <template>
-  <div class="task-item">
+  <div :class="['task-item', getColorClass(task._id)]">
     <div v-if="editing" class="edit-mode">
       <input type="text" v-model="taskName" @keyup.enter="saveTask" class="task-input" />
     </div>
@@ -8,10 +8,12 @@
       <div class="icons">
         <img src="../../../../public/assets/editIcon.png" alt="Edit" @click="startEditing" class="icon edit-icon" />
         <img src="../../../../public/assets/deleteIcon.png" alt="Delete" @click="deleteTask" class="icon delete-icon" />
+        <img src="../../../../public/assets/copy.png" alt="Clone" @click="cloneTask" class="icon clone-icon" />
       </div>
     </div>
   </div>
 </template>
+>
 
 <script setup lang="ts">
 import { ref } from 'vue';
@@ -23,10 +25,10 @@ const props = defineProps({
   },
 });
 
-const emits = defineEmits(['updateTask', 'deleteTask']);
+const emits = defineEmits(['updateTask', 'deleteTask', 'cloneTask']);
 
 const editing = ref(false);
-const taskName = ref(props.task.name);
+const taskName = ref(props.task.task);
 
 const startEditing = () => {
   editing.value = true;
@@ -41,6 +43,17 @@ const saveTask = () => {
 
 const deleteTask = () => {
   emits('deleteTask', props.task._id);
+};
+
+const cloneTask = () => {
+  emits('cloneTask', props.task._id);
+};
+
+// Генерация класса цвета на основе id или другого критерия
+const getColorClass = (taskId: string) => {
+  const colors = ['color-red', 'color-blue', 'color-green', 'color-yellow'];
+  const index = parseInt(taskId.slice(-1), 10) % colors.length; // Простой способ генерации индекса
+  return colors[index];
 };
 </script>
 <style scoped>
@@ -59,6 +72,23 @@ const deleteTask = () => {
 .task-item:hover {
   background-color: #f0f0f0;
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Примеры классов цветов */
+.color-red {
+  background-color: #ffcccc;
+}
+
+.color-blue {
+  background-color: #cce5ff;
+}
+
+.color-green {
+  background-color: #d4edda;
+}
+
+.color-yellow {
+  background-color: #fff3cd;
 }
 
 .edit-mode {
@@ -127,6 +157,10 @@ const deleteTask = () => {
 
 .delete-icon {
   filter: hue-rotate(0deg);
+}
+
+.clone-icon {
+  filter: hue-rotate(90deg);
 }
 
 /* Responsive Styles */

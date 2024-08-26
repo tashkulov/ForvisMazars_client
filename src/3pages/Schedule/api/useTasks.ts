@@ -1,8 +1,7 @@
 import { ref } from 'vue';
 import axios from 'axios';
-import {Logger} from "sass";
 
-const tasks = ref<hoveredCell[]>([]);
+const tasks = ref<{ _id: string, person: { _id: string, name: string }, startDay: string, endDay: string, task: string }[]>([]);
 const dynamicPeople = ref<{ _id: string, name: string }[]>([]);
 const hoveredCell = ref<{ _id: string, person: string, day: string } | null>(null);
 const taskToEdit = ref<{ person: string, day: string } | null>(null);
@@ -16,11 +15,12 @@ const apiBaseUrl = 'http://localhost:3000/api';
 const updateDynamicPeople = () => {
     dynamicPeople.value = [
         ...new Set([
-            ...tasks.value.map(task => ({ _id: task.person?._id, name: task.person?.name })),
+            ...tasks.value.map(task => ({ _id: task.person._id, name: task.person.name })),
             ...users.value.map(user => ({ _id: user._id, name: user.name }))
         ])
     ];
 };
+
 const onCellHover = (personId: string, personName: string, day: string) => {
     hoveredCell.value = { _id: personId, person: personName, day };
 };
@@ -36,7 +36,6 @@ const fetchTasks = async () => {
     }
 };
 
-
 // Получение всех пользователей
 const fetchUsers = async () => {
     try {
@@ -48,30 +47,33 @@ const fetchUsers = async () => {
     }
 };
 
-
 const getTasksForDay = (personId: string, day: string) => {
     return tasks.value.filter((t) => {
-        return t.person && t.person._id === personId && t.daysOfWeek.includes(day);
+        return t.person._id === personId && (t.startDay === day || t.endDay === day);
     });
 };
-
 
 const showAddInput = (personId: string, day: string) => {
     taskToEdit.value = { person: personId, day };
     showAddTaskDialog.value = true;
 };
+
 const confirmAddTask = async (taskName: string) => {
     if (!taskName.trim()) return;
-    const personId = hoveredCell.value?._id
+
+    const personId = hoveredCell.value?._id;
     if (!personId) {
         console.error('Person ID is not set.');
         return;
     }
+
     const newTask = {
         person: personId,  // Используем только ID пользователя
-        daysOfWeek: [taskToEdit.value?.day],
+        startDay: taskToEdit.value?.day, // Новый параметр
+        endDay: taskToEdit.value?.day,   // Новый параметр
         task: taskName
-    }
+    };
+
     try {
         const response = await axios.post(`${apiBaseUrl}/tasks`, newTask);
         tasks.value.push(response.data);
@@ -81,9 +83,6 @@ const confirmAddTask = async (taskName: string) => {
         console.error('Error adding task:', error);
     }
 };
-
-
-
 
 const addUser = async (userName: string) => {
     if (!userName.trim()) return;
@@ -95,6 +94,7 @@ const addUser = async (userName: string) => {
         console.error('Error adding user:', error);
     }
 };
+
 const updateUser = async ({ id, name }: { id: string, name: string }) => {
     if (!name.trim()) return;
 
@@ -115,8 +115,6 @@ const updateUser = async ({ id, name }: { id: string, name: string }) => {
     }
 };
 
-
-
 // Удаление пользователя
 const deleteUser = async (userId: string) => {
     try {
@@ -124,13 +122,14 @@ const deleteUser = async (userId: string) => {
 
         dynamicPeople.value = dynamicPeople.value.filter(person => person._id !== userId);
 
-        tasks.value = tasks.value.filter(task => task.person !== userId);
+        tasks.value = tasks.value.filter(task => task.person._id !== userId);
 
         console.log(`User and their tasks with ID ${userId} deleted.`);
     } catch (error) {
         console.error('Error deleting user:', error);
     }
 };
+
 // Обновление информации о задаче
 const updateTask = async ({ id, updatedTaskName }: { id: string, updatedTaskName: string }) => {
     if (!updatedTaskName.trim()) return;
@@ -141,18 +140,12 @@ const updateTask = async ({ id, updatedTaskName }: { id: string, updatedTaskName
 
         if (taskIndex !== -1) {
             tasks.value[taskIndex] = response.data;
-            updateDynamicPeople();
         }
         editingTaskId.value = null;
     } catch (error) {
         console.error('Error updating task:', error);
     }
 };
-
-
-
-
-
 
 // Удаление задачи
 const deleteTask = async (taskId: string) => {
