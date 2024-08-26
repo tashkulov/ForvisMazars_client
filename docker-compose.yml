@@ -1,13 +1,12 @@
-version: '3'
 services:
   frontend:
     build:
-      context: ./frontend
+      context: "../client"
     ports:
-      - "80:80"
+      - "5173:80"  # Маппинг порта 80 внутри контейнера на 5173 на хосте
   backend:
     build:
-      context: ./backend
+      context: "../server"  # Путь к бэкенду относительно `client`
     ports:
       - "3000:3000"
     depends_on:
